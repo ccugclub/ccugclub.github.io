@@ -5,16 +5,17 @@
   
   <title>Couchbase生产部署最佳实践 | China Couchbase User Group</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="中国Couchbase用户组，专注Couchbase相关技术分享">
+  <meta name="description" content="Couchbase安装配置最佳实践通用最佳实践为了让Couchbase集群获得最优性能，需要确保集群大小的正确分配，不能仅满足当前的工作负载，还要考虑维护、业务增长趋势和高峰负载。一般来说，推荐给集群预留一定的净上空间来适应容量上的异常毛刺和集群中的硬件故障。 下文概述的通用最佳实践比较典型，请查看附录了解更多的配置细节，我们将在后续文章中给出，请积极关注：">
+<meta name="keywords" content="Couchbase">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Couchbase生产部署最佳实践">
 <meta property="og:url" content="https://ccugclub.github.io/2017/05/11/Couchbase生产部署最佳实践/index.html">
 <meta property="og:site_name" content="China Couchbase User Group">
-<meta property="og:description" content="中国Couchbase用户组，专注Couchbase相关技术分享">
-<meta property="og:updated_time" content="2017-05-11T02:24:41.409Z">
+<meta property="og:description" content="Couchbase安装配置最佳实践通用最佳实践为了让Couchbase集群获得最优性能，需要确保集群大小的正确分配，不能仅满足当前的工作负载，还要考虑维护、业务增长趋势和高峰负载。一般来说，推荐给集群预留一定的净上空间来适应容量上的异常毛刺和集群中的硬件故障。 下文概述的通用最佳实践比较典型，请查看附录了解更多的配置细节，我们将在后续文章中给出，请积极关注：">
+<meta property="og:updated_time" content="2017-05-11T02:33:37.617Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Couchbase生产部署最佳实践">
-<meta name="twitter:description" content="中国Couchbase用户组，专注Couchbase相关技术分享">
+<meta name="twitter:description" content="Couchbase安装配置最佳实践通用最佳实践为了让Couchbase集群获得最优性能，需要确保集群大小的正确分配，不能仅满足当前的工作负载，还要考虑维护、业务增长趋势和高峰负载。一般来说，推荐给集群预留一定的净上空间来适应容量上的异常毛刺和集群中的硬件故障。 下文概述的通用最佳实践比较典型，请查看附录了解更多的配置细节，我们将在后续文章中给出，请积极关注：">
   
     <link rel="alternate" href="/atom.xml" title="China Couchbase User Group" type="application/atom+xml">
   
@@ -54,7 +55,7 @@
         
           <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
         
-        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+        <a id="nav-search-btn" class="nav-icon" title="Zoeken"></a>
       </nav>
       <div id="search-form-wrap">
         <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="https://ccugclub.github.io"></form>
@@ -85,13 +86,71 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        
+        <h1 id="Couchbase安装配置最佳实践"><a href="#Couchbase安装配置最佳实践" class="headerlink" title="Couchbase安装配置最佳实践"></a>Couchbase安装配置最佳实践</h1><h2 id="通用最佳实践"><a href="#通用最佳实践" class="headerlink" title="通用最佳实践"></a>通用最佳实践</h2><p>为了让Couchbase集群获得最优性能，需要确保集群大小的正确分配，不能仅满足当前的工作负载，还要考虑维护、业务增长趋势和高峰负载。一般来说，推荐给集群预留一定的净上空间来适应容量上的异常毛刺和集群中的硬件故障。</p>
+<p>下文概述的通用最佳实践比较典型，请查看附录了解更多的配置细节，我们将在后续文章中给出，请积极关注：</p>
+<a id="more"></a>
+<p><strong>系统、硬件</strong></p>
+<ol>
+<li>裸机(bare metal)安装总能获得最佳性能。虚拟化会增加开销，减少各方面的整体资源效率，如操作系统、磁盘I/O、网络性能、CPU。</li>
+<li>永远使用本地磁盘存储（节点间无共享架构）。使用SAN不光会导致单点故障，还会导致资源竞争。</li>
+<li>如果你必须使用虚拟化架构，你仍然可以用专用的本地存储替代逻辑虚拟化磁盘来提高性能。</li>
+</ol>
+<p><strong>系统级</strong></p>
+<ol>
+<li>生产上只使用64位操作系统。</li>
+<li>Linux上部署，其内核版本应该大于<code>2.6.32-504.12.2</code>来避免已知的内核缺陷。</li>
+<li>在<a href="https://developer.couchbase.com/documentation/server/4.1/install/install-platforms.html" target="_blank" rel="external">这里</a>查看支持平台所有列表。</li>
+</ol>
+<p><strong>内存</strong></p>
+<ol>
+<li>最少保留<code>10%</code>的系统内存用于内核进程和页面缓存。其余内存应分配给Bucket和Index quotas。</li>
+<li>在BIOS中禁止非一致性内存访问(<code>NUMA</code>)。</li>
+</ol>
+<p><strong>磁盘、卷设计</strong></p>
+<ol>
+<li>一切顺利的话，SSD要优于机械盘，更优于网络块设备（<code>iSCSI</code>或<code>EBS</code>）。注意的是<code>NFS</code>不支持。</li>
+<li>从性能角度来看，等价容量前提下（RAID 0 或 RAID 10 而不是 RAID 5），多并行设备要优于单块硬盘，例如 4块256GB SSDs要比单个1TB的SSD磁盘快，就因为并行I/O通道变多了。</li>
+<li>为了性能，要给每个索引和数据配置独立的磁盘卷来隔离I/O。更快的磁盘应该给索引。</li>
+</ol>
+<p><strong>CPU</strong></p>
+<ol>
+<li>最小4核</li>
+<li>每10,000 ops/s吞吐量 一个bucket对应 +1 核</li>
+<li>每个视图文档或者GSI索引对应 +1 核</li>
+<li>每个XDCR流对应 +1 核</li>
+<li>调优索引节点上的<code>IRQ affinity</code>来减少IRQ竞争。Linux上有个<a href="https://gist.githubusercontent.com/deanproctor/a1afa059c8f58fcbe99d768857d758c2/raw/f7d0ded4a171c34f2bd860657301d4c81c0577cb/set_irq_affinity.sh" target="_blank" rel="external">脚本</a>可以自动完成该操作。</li>
+</ol>
+<p><strong>网络</strong></p>
+<ol>
+<li>Couchbase只会使用一个网络接口。如果多个接口可用，需要进行接口绑定。</li>
+<li>在相同VLAN内部署Couchbase节点。</li>
+<li>消除集群节点间的路由跨界(<code>router hops</code>)</li>
+<li>消除客户端和集群间的路由跨界(<code>router hops</code>)</li>
+</ol>
+<p><strong>Couchbase</strong></p>
+<ol>
+<li>生产环境中<code>Data</code>，<code>Index</code>和<code>Query</code>服务应该部署在不同的服务器上。最低限度，<code>Data</code>和<code>Index</code>应该隔离在不同的卷上来防止资源竞争。</li>
+<li>配置数据的Bucket尽可能少，推荐上限是一个集群5个buckets。</li>
+<li>分配所有可用的集群quota内存给buckets和索引。如果需要，可用减少Bucket quota分配来容纳额外的buckets。</li>
+<li>在Couchbase指导下在Bucket上使用Value Eviction。</li>
+<li>确保所有buckets上的Flush被禁用。</li>
+<li>启用内置的告警功能，配置发送到监控中。</li>
+<li>启用<code>auto-failover</code>，设置120秒超时时间。一旦网络稳定性确定了，这个值还可以再减少。</li>
+<li>如果发现IO竞争。在非高峰时间窗口进行压缩。</li>
+<li>确保部署视图后生产环境上的开发设计文档被移除。</li>
+<li>生产环境中删除默认的bucket。</li>
+</ol>
+<p><strong>虚拟化环境的考虑</strong></p>
+<p>查看<a href="http://support.couchbase.com/entries/26790124-Virtualization-Considerations" target="_blank" rel="external">http://support.couchbase.com/entries/26790124-Virtualization-Considerations</a></p>
+
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://ccugclub.github.io/2017/05/11/Couchbase生产部署最佳实践/" data-id="cj2jsl28y0001ckiq912jp68f" class="article-share-link">Share</a>
+      <a data-url="https://ccugclub.github.io/2017/05/11/Couchbase生产部署最佳实践/" data-id="cj2jsyd4200013siq9isx1an4" class="article-share-link">Delen</a>
       
       
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Couchbase/">Couchbase</a></li></ul>
+
     </footer>
   </div>
   
@@ -107,13 +166,27 @@
 
   
     
+  <div class="widget-wrap">
+    <h3 class="widget-title">Labels</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Couchbase/">Couchbase</a></li></ul>
+    </div>
+  </div>
+
 
   
     
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Couchbase/" style="font-size: 10px;">Couchbase</a>
+    </div>
+  </div>
+
   
     
   <div class="widget-wrap">
-    <h3 class="widget-title">Archives</h3>
+    <h3 class="widget-title">Archieven</h3>
     <div class="widget">
       <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/05/">May 2017</a></li></ul>
     </div>
@@ -123,7 +196,7 @@
   
     
   <div class="widget-wrap">
-    <h3 class="widget-title">Recent Posts</h3>
+    <h3 class="widget-title">Recente berichten</h3>
     <div class="widget">
       <ul>
         
